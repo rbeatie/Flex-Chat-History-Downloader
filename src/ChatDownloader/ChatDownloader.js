@@ -1,6 +1,8 @@
 import React from 'react';
-import { ChatDownloaderListItem } from "./ChatDownloaderListItem";
-import {css} from "emotion";
+import { css } from 'emotion';
+import { withTheme } from '@twilio/flex-ui';
+import { ChatDownloaderListItem } from './ChatDownloaderListItem';
+
 
 class ChatDownloader extends React.Component {
   state = {
@@ -11,11 +13,14 @@ class ChatDownloader extends React.Component {
 
   constructor(props) {
     super(props);
+
     this.updateChannels()
   }
 
   componentWillUnmount() {
-    return this.unsub ? this.unsub() : () => {};
+    return this.unsub
+      ? this.unsub()
+      : () => {};
   }
 
   updateChannels() {
@@ -27,7 +32,10 @@ class ChatDownloader extends React.Component {
       .store
       .subscribe(
       () => {
-        this.setState({channels: [], ready: false});
+        this.setState({
+          channels: [],
+          ready: false
+        });
 
         const channels = manager
           .store
@@ -57,6 +65,7 @@ class ChatDownloader extends React.Component {
             this.setState({channels: nextChannels});
           }
         }
+
         this.setState({ready: true});
       }
     );
@@ -87,74 +96,47 @@ class ChatDownloader extends React.Component {
             `
           }
         >
-          <h1>Chat Channel History Downloader</h1>
-          <div>
-            Please select a channel below to download the history to a CSV.
+          <h1
+            className={css`
+              font-size: 1.6em;
+              font-weight: 700;
+            `}
+          >Chat Channel History Downloader
+          </h1>
+          <div>Please select a channel below to download the history to a CSV.
           </div>
-          <ul>
-            {
-              this.state.channels
-                .map(
-                  descriptor => {
-                    const sid = Object.keys(descriptor)[0];
-                    const chan = descriptor[sid].source;
-                    return (
-                      <ChatDownloaderListItem
-                        key={'channel-' + sid + '-key'}
-                        manager={manager}
-                        label={chan.state.friendlyName}
-                        sid={chan.sid}
-                        type={chan.type}
-                        date={chan.state.dateCreated.toDateString()}
-                      />
-                    );
-                }
-            )}
+          <ul
+            className={css`
+              background: grey;
+              max-width: 45%;
+              min-height: 100%;
+            `}
+          >
+          {
+          this.state.channels
+            .map(
+              descriptor => {
+                const sid = Object.keys(descriptor)[0];
+                const chan = descriptor[sid].source;
+
+                return (
+                  <ChatDownloaderListItem
+                    key={'channel-' + sid + '-key'}
+                    manager={manager}
+                    label={chan.state.friendlyName}
+                    sid={chan.sid}
+                    type={chan.type}
+                    date={chan.state.dateCreated.toDateString()}
+                  />
+                );
+              }
+          )}
           </ul>
         </section>
-      )
+      );
     }
     return null;
   }
 }
 
-export default ChatDownloader;
-
-
-/**
- * = Descriptor =
- * currentPaginator: {items: Array(16), hasPrevPage: false, hasNextPage: false, prevPage: ƒ, nextPage: ƒ}
- * errorWhileLoadingChannel: false
- * inputText: ""
- * isLoadingChannel: false
- * isLoadingMembers: false
- * isLoadingMessages: false
- * lastConsumedMessageIndex: 15
- * listener: e {_listening: true, handleMessageAdded: ƒ, handleMessageUpdated: ƒ, handleMessageRemoved: ƒ, handleMemberJoined: ƒ, …}
- * members: Map(2) {"BBRjgbo0DKuA0ADvtakeMobXghttFvss" => {…}, "rbeatie" => {…}}
- * messages: (16) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
- * selectionStart: 0
- * source: Channel {_events: {…}, _eventsCount: 10, _maxListeners: undefined, services: ClientServices, sid: "CHa9723ff3f8ab48999dc88fbb607c938a", …}
- * typers: []
- *
- *
- * messages: [
- *   groupWithNext: false
- *   groupWithPrevious: false
- *   isFromMe: false
- *   source: {
- *    attributes: (...)
- *    createdBy: (...)
- *    dateCreated: (...)
- *    dateUpdated: (...)
- *    friendlyName: (...)
- *    isPrivate: (...)
- *    lastConsumedMessageIndex: (...)
- *    lastMessage: (...)
- *    notificationLevel: (...)
- *    status: (...)
- *    type: (...)
- *    uniqueName: (...)
- *   }
- * ]
- */
+export default withTheme(ChatDownloader);

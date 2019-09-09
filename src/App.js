@@ -8,10 +8,12 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
-
     const {manager} = this.props;
 
-    Flex.ViewCollection.Content.add(
+    Flex
+      .ViewCollection
+      .Content
+      .add(
       <View
         name="chat-downloader"
         key="chat-downloader-key"
@@ -22,7 +24,10 @@ class App extends React.Component {
       </View>
     );
 
-    Flex.SideNav.Content.add(
+    Flex
+      .SideNav
+      .Content
+      .add(
       <ChatDownloaderLink
         key="chat-sidelink-key"
       />,
@@ -38,7 +43,9 @@ class App extends React.Component {
     }
 
     return (
-      <Flex.ContextProvider manager={manager}>
+      <Flex.ContextProvider
+        manager={manager}
+      >
         <Flex.RootContainer />
       </Flex.ContextProvider>
     );

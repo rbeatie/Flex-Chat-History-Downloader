@@ -1,10 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import "regenerator-runtime/runtime";
-import * as Flex from "@twilio/flex-ui";
-import "./index.css";
-import App from "./App";
 import registerServiceWorker from "./registerServiceWorker";
+import App from "./App";
+import * as Flex from "@twilio/flex-ui";
+
+import "./index.css";
+import "regenerator-runtime/runtime";
 
 const mountNode = document.getElementById("root");
 
