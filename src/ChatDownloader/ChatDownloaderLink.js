@@ -1,5 +1,6 @@
 import React from "react";
 import * as Flex from "@twilio/flex-ui";
+import {Download, DownloadActive} from "./Icons/Download.Icons";
 
 export function ChatDownloaderLink() {
 
@@ -13,8 +14,8 @@ export function ChatDownloaderLink() {
 
   return (
     <Flex.SideLink
-      icon={'Download'}
-      iconActive={'DownloadActive'}
+      icon={<Download />}
+      iconActive={<DownloadActive />}
       activeView={'chat-downloader'}
       showLabel={true}
       onClick={() => {

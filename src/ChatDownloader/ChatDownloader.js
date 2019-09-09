@@ -1,143 +1,160 @@
-import React from '@twilio/flex-ui';
-import TwilioChat from 'twilio-chat';
-import { Icon } from '@twilio/flex-ui';
+import React from 'react';
+import { ChatDownloaderListItem } from "./ChatDownloaderListItem";
+import {css} from "emotion";
 
 class ChatDownloader extends React.Component {
   state = {
-    ok: false,
+    ready: false,
     error: void 0,
-    task: {}
+    channels: []
   };
 
   constructor(props) {
     super(props);
-    setupChatCatcher();
+    this.updateChannels()
   }
 
-  shouldComponentUpdate(nextProps, nextState, nextContext) {
-    if (nextProps.task.channelType === 'chat' && nextState.task !== nextProps.task) {
-      nextState.task = nextProps.task;
-      nextState.ok = true;
-      return true;
-    } else {
-      nextState.ok = false;
-      return true;
-    }
+  componentWillUnmount() {
+    return this.unsub ? this.unsub() : () => {};
   }
 
-  downloadChatHistory() {
+  updateChannels() {
+    const {manager} = this.props;
+
+    console.log('manager', manager);
+
+    this.unsub =  manager
+      .store
+      .subscribe(
+      () => {
+        this.setState({channels: [], ready: false});
+
+        const channels = manager
+          .store
+          .getState()
+          .flex
+          .chat
+          .channels
+        ? manager
+          .store
+          .getState()
+          .flex
+          .chat
+          .channels
+        : [];
+
+        for (let key of Object.keys(channels)) {
+          const descriptor = channels[key];
+
+          if (!(descriptor.source.sid in this.state.channels)) {
+            const nextChannels = [
+              ...this.state.channels,
+              {
+                [descriptor.source.sid]: descriptor
+              }
+            ];
+
+            this.setState({channels: nextChannels});
+          }
+        }
+        this.setState({ready: true});
+      }
+    );
   }
 
   render() {
+    const {manager} = this.props;
+
     if (this.state.error) {
-      return this.props.render({
-        error: this.state.error
-      });
+      console.error(this.state.error);
+      return (
+        <div>
+          Error, check console.
+        </div>
+      );
     }
 
-    if (this.state.ok) {
-      return this.state.render(
-        <div>
-          <button>
-            <Icon icon='Logout' />
-          </button>
-        </div>
+    if (this.state.ready) {
+      return (
+        <section
+          className={
+            css`
+              width: 100%;
+              height: 100%;
+              display: flex;
+              justify-content: flex-start;
+              flex-direction: column;
+            `
+          }
+        >
+          <h1>Chat Channel History Downloader</h1>
+          <div>
+            Please select a channel below to download the history to a CSV.
+          </div>
+          <ul>
+            {
+              this.state.channels
+                .map(
+                  descriptor => {
+                    const sid = Object.keys(descriptor)[0];
+                    const chan = descriptor[sid].source;
+                    return (
+                      <ChatDownloaderListItem
+                        key={'channel-' + sid + '-key'}
+                        manager={manager}
+                        label={chan.state.friendlyName}
+                        sid={chan.sid}
+                        type={chan.type}
+                        date={chan.state.dateCreated.toDateString()}
+                      />
+                    );
+                }
+            )}
+          </ul>
+        </section>
       )
     }
-    return
+    return null;
   }
 }
 
+export default ChatDownloader;
 
-export function setupChatCatcher(manager) {
-  const historyMap = window.ChannelHistories = {};
-  const stateStore = () => manager
-    .store
-    .getState();
-  const channels = stateStore()
-    .flex
-    .chat
-    .channels;
 
-  for (let key of Object.keys(channels)) {
-    const descriptor = channels[key];
-    const chan = descriptor
-      .source;
-
-    chan.on('messageAdded', (message) => {
-      historyMap[chan.sid] = descriptor
-        .messages
-        .map(extractMessage);
-      console.log('Channel History updated >', descriptor);
-    });
-  }
-
-  manager.chatClient.on('channelRemoved', (chan) => {
-    console.log('CHAN REMOVED!!');
-  });
-
-  manager.chatClient.on('channelAdded', (chan) => {
-    chan.on('messageAdded', (message) => {
-      historyMap[chan.sid] = stateStore()
-        .flex
-        .chat
-        .channels[chan.sid]
-        .messages
-        .map(extractMessage);
-      console.log('Channel History updated > ', chan);
-    })
-  });
-
-  function extractMessage(messageData) {
-    return {
-      author: messageData.source.author,
-      text: messageData.source.body
-    };
-  }
-}
-
-export function setupChatClient(options) {
-  const manager  = options;
-
-  TwilioChat
-    .create(manager.user.token)
-    .then(chatClient => {
-      console.log('client??');
-      chatClient.on('channelAdded', (channel) => {
-
-        console.log('channel??', channel);
-
-        channel.onChannelUpdate = async function (member) {
-          console.log('member', member);
-          if (member.identity === 'guest') {  // check if guest
-            console.log('task on member??');
-
-            // create new task
-            const taskRouter = await manager
-
-              .workerClient
-              .Client
-              .create(manager.user.token);
-
-            console.log('taskrouter', taskRouter);
-
-            const workflowInstances = await taskRouter
-              .workspaces(manager.user.token)
-              .workflows
-              .list();
-            const workFlow = workflowInstances
-              .filter(flow => flow.friendlyName === 'ChatWorkflow')[0];
-
-            workFlow.tasks.create({
-              attributes: JSON.stringify({
-                channelSid: channel.sid,
-                name: "Visitor",
-                channelType: "web"
-              }),
-              workflowSid: workFlow.sid
-            });
-          }
-        };
-      });
-    })
-}
+/**
+ * = Descriptor =
+ * currentPaginator: {items: Array(16), hasPrevPage: false, hasNextPage: false, prevPage: ƒ, nextPage: ƒ}
+ * errorWhileLoadingChannel: false
+ * inputText: ""
+ * isLoadingChannel: false
+ * isLoadingMembers: false
+ * isLoadingMessages: false
+ * lastConsumedMessageIndex: 15
+ * listener: e {_listening: true, handleMessageAdded: ƒ, handleMessageUpdated: ƒ, handleMessageRemoved: ƒ, handleMemberJoined: ƒ, …}
+ * members: Map(2) {"BBRjgbo0DKuA0ADvtakeMobXghttFvss" => {…}, "rbeatie" => {…}}
+ * messages: (16) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+ * selectionStart: 0
+ * source: Channel {_events: {…}, _eventsCount: 10, _maxListeners: undefined, services: ClientServices, sid: "CHa9723ff3f8ab48999dc88fbb607c938a", …}
+ * typers: []
+ *
+ *
+ * messages: [
+ *   groupWithNext: false
+ *   groupWithPrevious: false
+ *   isFromMe: false
+ *   source: {
+ *    attributes: (...)
+ *    createdBy: (...)
+ *    dateCreated: (...)
+ *    dateUpdated: (...)
+ *    friendlyName: (...)
+ *    isPrivate: (...)
+ *    lastConsumedMessageIndex: (...)
+ *    lastMessage: (...)
+ *    notificationLevel: (...)
+ *    status: (...)
+ *    type: (...)
+ *    uniqueName: (...)
+ *   }
+ * ]
+ */
